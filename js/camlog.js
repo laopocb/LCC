@@ -11,7 +11,7 @@
  * @param {THREE.PerspectiveCamera} camera
  * @param {object} opts - { getPose?: ()=>({yaw,pitch}), interval? }
  */
-import { saveCameraPose } from './saveCameraPose.js?v=5';
+import { saveCameraPose } from './saveCameraPose.js?v=10';
 
 export function startCameraLog(camera, opts = {}) {
   const p = new URLSearchParams(location.search);

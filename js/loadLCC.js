@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { loadSdk } from './loadSdk.js?v=5';
-import { DATA_PATH, APP_KEY } from './config.js?v=5';
-import { updateProgress } from './updateProgress.js?v=5';
+import { loadSdk } from './loadSdk.js?v=10';
+import { DATA_PATH, APP_KEY } from './config.js?v=10';
+import { updateProgress } from './updateProgress.js?v=10';
 
 let LCCRenderModule = null;
 

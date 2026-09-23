@@ -18,7 +18,8 @@ export function enforceCameraHeight(camera, lccObject, opts = {}) {
   const EYE = opts.eye ?? 1.5;
   const SMOOTH = opts.smooth ?? 14;   // 收敛速率（每秒），越大跟得越紧
   const THROTTLE = opts.throttle ?? 120; // 地面探测节流 ms
-  const DEAD = opts.deadZone ?? 0.02;    // 死区 m
+  const DEAD = opts.deadZone ?? 0.02;
+  const MAX_STEP = opts.maxStep ?? 0.45; // 只允许爬上 0.45m 内的近处台阶；远处高台(墙沿/楼板)不自动爬升    // 死区 m
   const MAX_DROP = opts.maxDrop ?? 30;
   const DOWN = { x: 0, y: -1, z: 0 };
 
@@ -51,7 +52,10 @@ export function enforceCameraHeight(camera, lccObject, opts = {}) {
 
     // 死区 + 平滑：明显低于地板才抬高，避免边界处上下反复抖动
     if (p.y < floorY - DEAD) {
-      p.y += (floorY - p.y) * (1 - Math.exp(-SMOOTH * dt));
+      const deficit = floorY - p.y;
+      if (deficit <= MAX_STEP) {
+        p.y += deficit * (1 - Math.exp(-SMOOTH * dt));
+      } // 远处高台不爬（防撞墙被顶高）
     }
   };
 
