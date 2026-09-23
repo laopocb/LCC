@@ -49,11 +49,10 @@ async function main() {
     const bodyStep = enableBodyCollision(camera, lccObject, { clearance: 0.5, bodyLow: 1.5 });
     const wasdUpdate = enableWasdMove(camera, { speed: 3, lift });
 
-    // SDK 每帧会挪动相机（LOD/自有逻辑）——快照我们控制的位姿，更新后立刻还原，防止镜头漂移
-    // 无位移输入时的冻结坐标：不按键就绝不位移
-    let fx, fy, fz;
-    fx = camera.position.x; fy = camera.position.y; fz = camera.position.z;
-
+    // 相机铁律：
+    //   1) 无位移输入时，位置与朝向完全冻结，任何功能/底层都不得触动相机（渲染前最后钉死）。
+    //   2) guardSdk：SDK 更新后立刻把相机还原成我们控制的位姿，SDK 无权挪镜头。
+    //   3) 碰撞等一切"会动相机"的逻辑，只在有位移输入时才允许执行。
     let sx, sy, sz, qx, qy, qz, qw;
     const guardSdk = () => {
       sx = camera.position.x; sy = camera.position.y; sz = camera.position.z;
@@ -63,26 +62,32 @@ async function main() {
       camera.quaternion.set(qx, qy, qz, qw);
     };
 
-    // 统一在单一 render 循环里按固定顺序处理：位移 → 高度约束 → 视角 → 渲染
+    let fx, fy, fz, fqx, fqy, fqz, fqw;   // 无输入时的冻结位姿
+    fx = camera.position.x; fy = camera.position.y; fz = camera.position.z;
+    fqx = camera.quaternion.x; fqy = camera.quaternion.y; fqz = camera.quaternion.z; fqw = camera.quaternion.w;
+
     let last = performance.now();
     renderer.setAnimationLoop(() => {
       const now = performance.now();
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
 
-      guardSdk();         // SDK 更新后立刻还原相机，防位移
-      // 冻结守卫：没有任何位移键按下时，相机必须纹丝不动；如有自行位移立即回滚
-      if (wasdUpdate.active()) {
-        fx = camera.position.x; fy = camera.position.y; fz = camera.position.z;
-      } else if (Math.abs(camera.position.x - fx) > 1e-4 ||
-                 Math.abs(camera.position.y - fy) > 1e-4 ||
-                 Math.abs(camera.position.z - fz) > 1e-4) {
-        camera.position.set(fx, fy, fz);
-      }
+      const moving = wasdUpdate.active(); // 是否有位移输入
       wasdUpdate(dt);      // WASD 平面移动 + R/F 升降
-      heightStep(dt, now); // 基准地面锁定（+手动抬升），防爬到楼上——最后一道约束，压过 SDK
-      bodyStep(dt, now);   // 水平碰撞推挤（0.5m 弹开）
-      look();             // 第一人称朝向（俯仰 ±30° + 阻尼）
+      heightStep(dt, now); // 基准地面锁定
+      if (moving) bodyStep(dt, now); // 只有移动时才做碰撞推挤，静止时不推
+      look();             // 第一人称朝向
+      guardSdk();         // SDK 更新后立刻还原相机
+
+      if (moving) {
+        // 记录虹由我们控制的位姿（含碰撞后的修正），供释放后冻结
+        fx = camera.position.x; fy = camera.position.y; fz = camera.position.z;
+        fqx = camera.quaternion.x; fqy = camera.quaternion.y; fqz = camera.quaternion.z; fqw = camera.quaternion.w;
+      } else {
+        // 无输入：渲染前最后一步强制钉死位置+朝向——谁来写都改不掉
+        camera.position.set(fx, fy, fz);
+        camera.quaternion.set(fqx, fqy, fqz, fqw);
+      }
       renderLoop({ camera, scene, canvas, renderer });
     });
     window.addEventListener('beforeunload', () => { wasdUpdate.stop(); look.stop(); });
