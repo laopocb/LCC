@@ -4,10 +4,10 @@ import { createCamera } from './createCamera.js';
 import { loadLCC } from './loadLCC.js';
 import { showSdkTip } from './showSdkTip.js';
 import { startCameraLog } from './camlog.js';
-import { restoreCameraPose } from './restoreCameraPose.js';
 import { enforceCameraHeight } from './enforceCameraHeight.js';
 import { enableWasdMove } from './wasdMove.js';
 import { enableFirstPersonLook } from './firstPersonControls.js';
+import { enableBodyCollision } from './bodyCollision.js';
 
 const canvas = document.getElementById('canvas');
 
@@ -18,17 +18,8 @@ async function main() {
   const scene = createScene();
   const camera = createCamera();
 
-  // 恢复上次保存的位姿作为初始定位（第一人称：position + yaw/pitch）
-  const posed = restoreCameraPose();
-  camera.position.set(...posed.position);
-  camera.fov = posed.fov;
-  camera.updateProjectionMatrix();
-  if (Number.isFinite(posed.yaw) && Number.isFinite(posed.pitch)) {
-    camera.rotation.order = 'YXZ';
-    camera.rotation.set(posed.pitch, posed.yaw, 0); // 新格式：直接给定朝向
-  } else {
-    camera.lookAt(...(posed.target || [0, 0, -1])); // 旧格式/默认：看向 target
-  }
+  // 初始定位：始终使用 createCamera 的默认视角（每次刷新都回到相机最初位置）
+
 
   // 第一人称视角控制：俯仰锁 ±30°、水平 360°、带阻尼
   const look = enableFirstPersonLook(camera, canvas, { pitchLimit: 30, sensitivity: 0.0025, damping: 0.15 });
@@ -45,11 +36,13 @@ async function main() {
   });
 
   try {
-    const { lccObject, renderLoop } = await loadLCC({ camera, scene, canvas, renderer });
+    const { lccObject, renderLoop, sdkUpdate } = await loadLCC({ camera, scene, canvas, renderer });
 
     // 地板下限约束 + WASD 位移（W/S/A/D 移动、R/F 升降）
-    const heightStep = enforceCameraHeight(camera, lccObject, { eye: 1.5 });
-    const wasdUpdate = enableWasdMove(camera, { speed: 3 });
+    const lift = { value: 0 }; // 共享手动抬升量（R/F，供高度锁定使用）
+    const heightStep = enforceCameraHeight(camera, lccObject, { eye: 1.5, lift });
+    const bodyStep = enableBodyCollision(camera, lccObject, { clearance: 0.5, bodyLow: 1.5 });
+    const wasdUpdate = enableWasdMove(camera, { speed: 3, lift });
 
     // 统一在单一 render 循环里按固定顺序处理：位移 → 高度约束 → 视角 → 渲染
     let last = performance.now();
@@ -58,8 +51,10 @@ async function main() {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
 
+      sdkUpdate();        // SDK 每帧更新（可能移动相机），先跑
       wasdUpdate(dt);      // WASD 平面移动 + R/F 升降
-      heightStep(dt, now); // 地板下限约束（防穿地，节流探测 + 死区）
+      heightStep(dt, now); // 基准地面锁定（+手动抬升），防爬到楼上——最后一道约束，压过 SDK
+      bodyStep(dt, now);   // 水平碰撞推挤（0.5m 弹开）
       look();             // 第一人称朝向（俯仰 ±30° + 阻尼）
       renderLoop({ camera, scene, canvas, renderer });
     });

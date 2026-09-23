@@ -61,8 +61,8 @@ export async function loadLCC(ctx) {
 
   return {
     lccObject,
+    sdkUpdate() { LCCRenderModule.update(); },  // 拆分：SDK 每帧更新（会动相机），放在我们约束之前
     renderLoop(ctx2) {
-      LCCRenderModule.update();
       ctx2.renderer.render(ctx2.scene, ctx2.camera);
     }
   };

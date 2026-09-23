@@ -1,19 +1,20 @@
 /**
- * wasdMove.js —— WASD 前后左右移动 + R/F 升降相机
+ * wasdMove.js —— WASD 前后左右移动 + R/F 升降（升量写入 lift 对象）
  * --------------------------------------------------------------------------
- * W/S 前/后、A/D 左/右（沿水平面），R 上升、F 下降（自由抬高/降低相机，
- * 下限由 enforceCameraHeight 约束防止穿地）。
- * 只负责位移计算，不自行开 rAF、不调 controls.update()——
- * 由 render 主循环统一每帧调用一次 update(dt)。
+ * W/S 前/后、A/D 左/右（沿水平面）；R 上升、F 下降——不直接改 position.y，
+ * 而是累加到共享 lift.value，由 enforceCameraHeight 据此把相机抬/降，
+ * 以免与"地面锁定 + 水平碰撞推开"冲突。
+ * 只负责位移计算，不自行开 rAF。
  *
  * @param {THREE.PerspectiveCamera} camera
- * @param {object} opts - { speed?(3) 米/秒 }
- * @returns {function} update(dt)；带 .stop() 移除按键监听
+ * @param {object} opts - { speed?(3), lift?:{value:number} }
+ * @returns {function} update(dt)；带 .stop()
  */
 import * as THREE from 'three';
 
 export function enableWasdMove(camera, opts = {}) {
   const SPEED = opts.speed ?? 3; // 米/秒
+  const lift = opts.lift || { value: 0 };
   const keys = { f: false, b: false, l: false, r: false, up: false, down: false };
 
   const down = (e) => {
@@ -60,8 +61,9 @@ export function enableWasdMove(camera, opts = {}) {
     const dist = SPEED * dt;
     camera.position.x += hx * dist;
     camera.position.z += hz * dist;
+
     const vy = (keys.up ? 1 : 0) - (keys.down ? 1 : 0);
-    if (vy) camera.position.y += vy * dist;
+    if (vy) lift.value += vy * dist; // 累计手动抬升量（不低于地面）
   };
 
   window.addEventListener('keydown', down);
