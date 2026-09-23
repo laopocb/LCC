@@ -17,6 +17,7 @@ export function enforceCameraHeight(camera, lccObject, opts = {}) {
   const SMOOTH = opts.smooth ?? 8;
   const DEAD = opts.deadZone ?? 0.02;
   const lift = opts.lift || { value: 0 };   // 用户 R/F 手动抬升量（m）
+  const BASE_PRESET = Number.isFinite(opts.baseY) ? opts.baseY : null; // 预设基准（来自 config，未被 SDK 篡改）
   const MAX_DROP = 60;
 
   let baseY = null;   // 基准地面高度（出生点下方），只测一次
@@ -39,14 +40,15 @@ export function enforceCameraHeight(camera, lccObject, opts = {}) {
     if (!p) return;
 
     if (baseY === null) {
-      // 以出生瞬间相机高度为基准：保持 config 预设的初始位置（含 y），不做拉拽
-      baseY = p.y - EYE;
+      // 基准：优先取 config 预设（SDK 加载时可能挪过相机，避免把 SDK 的位置当基准）
+      baseY = BASE_PRESET !== null ? BASE_PRESET : (p.y - EYE);
     }
 
     const target = baseY + EYE + (Number.isFinite(lift.value) ? lift.value : 0);
     if (first) { p.y = target; first = false; return; }
     if (Math.abs(p.y - target) > DEAD) {
-      p.y += (target - p.y) * (1 - Math.exp(-SMOOTH * dt));
+      // 硬性钉死到目标高度：SDK 每帧可能把相机挪回自己的位置，平滑修正会输给它
+      p.y = target;
     }
   };
 
