@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { loadSdk } from './loadSdk.js';
-import { DATA_PATH, APP_KEY } from './config.js';
-import { updateProgress } from './updateProgress.js';
+import { loadSdk } from './loadSdk.js?v=5';
+import { DATA_PATH, APP_KEY } from './config.js?v=5';
+import { updateProgress } from './updateProgress.js?v=5';
 
 let LCCRenderModule = null;
 
@@ -61,8 +61,8 @@ export async function loadLCC(ctx) {
 
   return {
     lccObject,
+    sdkUpdate() { LCCRenderModule.update(); },
     renderLoop(ctx2) {
-      LCCRenderModule.update();
       ctx2.renderer.render(ctx2.scene, ctx2.camera);
     }
   };

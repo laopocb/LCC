@@ -1,5 +1,5 @@
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { CAMERA } from './config.js';
+import { CAMERA } from './config.js?v=5';
 
 /**
  * 创建轨道控制器（旋转/缩放/平移）

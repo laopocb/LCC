@@ -71,6 +71,7 @@ export function enableWasdMove(camera, opts = {}) {
     window.removeEventListener('keydown', down);
     window.removeEventListener('keyup', up);
   };
+  update.active = () => keys.f || keys.b || keys.l || keys.r; // 是否有位移输入
 
   return update;
 }
