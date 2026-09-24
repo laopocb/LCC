@@ -2,18 +2,18 @@
  * main.tune.js —— 调优台版本入口（不动原版 main.js）
  * 与原版差异：加载完成后挂载"观感调优台"面板，方便实时试机位/画质/调色。
  */
-import { createRenderer } from './createRenderer.js?v=11';
-import { createScene } from './createScene.js?v=11';
-import { createCamera } from './createCamera.js?v=11';
-import { loadLCC } from './loadLCC.js?v=11';
-import { showSdkTip } from './showSdkTip.js?v=11';
-import { startCameraLog } from './camlog.js?v=11';
-import { CAMERA } from './config.js?v=11';
-import { enforceCameraHeight } from './enforceCameraHeight.js?v=11';
-import { enableWasdMove } from './wasdMove.js?v=11';
-import { enableFirstPersonLook } from './firstPersonControls.js?v=11';
-import { enableBodyCollision } from './bodyCollision.js?v=11';
-import { mountTunePanel } from './tunePanel.js?v=11';
+import { createRenderer } from './createRenderer.js?v=34';
+import { createScene } from './createScene.js?v=34';
+import { createCamera } from './createCamera.js?v=34';
+import { loadLCC } from './loadLCC.js?v=34';
+import { showSdkTip } from './showSdkTip.js?v=34';
+import { startCameraLog } from './camlog.js?v=34';
+import { CAMERA } from './config.js?v=34';
+import { enforceCameraHeight } from './enforceCameraHeight.js?v=34';
+import { enableWasdMove } from './wasdMove.js?v=34';
+import { enableFirstPersonLook } from './firstPersonControls.js?v=34';
+import { enableBodyCollision } from './bodyCollision.js?v=34';
+import { mountTunePanel } from './tunePanel.js?v=34';
 
 const canvas = document.getElementById('canvas');
 

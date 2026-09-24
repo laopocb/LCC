@@ -1,5 +1,5 @@
 ﻿import * as THREE from 'three';
-import { CAMERA } from './config.js?v=10';
+import { CAMERA } from './config.js?v=34';
 
 /**
  * 创建透视相机

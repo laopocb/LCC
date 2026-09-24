@@ -1,4 +1,4 @@
-﻿import { SDK_CANDIDATES } from './config.js?v=10';
+﻿import { SDK_CANDIDATES } from './config.js?v=34';
 
 /**
  * 动态加载 XGrids Web SDK（专有库，需从开发者平台登录下载）

@@ -16,8 +16,8 @@
  * @param {object} ctx - { camera, look, renderer, scene, canvas, lccObject }
  */
 
-import { POSE_PRESETS, applyPose as applyPreset, snapshotPose } from './posePresets.js?v=11';
-import { CAMERA } from './config.js?v=11';
+import { POSE_PRESETS, applyPose as applyPreset, snapshotPose } from './posePresets.js?v=34';
+import { CAMERA } from './config.js?v=34';
 
 const LS_KEY = 'wanlin_tune_v1';
 

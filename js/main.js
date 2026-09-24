@@ -1,14 +1,14 @@
-import { createRenderer } from './createRenderer.js?v=10';
-import { createScene } from './createScene.js?v=10';
-import { createCamera } from './createCamera.js?v=10';
-import { loadLCC } from './loadLCC.js?v=10';
-import { showSdkTip } from './showSdkTip.js?v=10';
-import { startCameraLog } from './camlog.js?v=10';
-import { CAMERA } from './config.js?v=10';
-import { enforceCameraHeight } from './enforceCameraHeight.js?v=10';
-import { enableWasdMove } from './wasdMove.js?v=10';
-import { enableFirstPersonLook } from './firstPersonControls.js?v=10';
-import { enableBodyCollision } from './bodyCollision.js?v=10';
+import { createRenderer } from './createRenderer.js?v=34';
+import { createScene } from './createScene.js?v=34';
+import { createCamera } from './createCamera.js?v=34';
+import { loadLCC } from './loadLCC.js?v=34';
+import { showSdkTip } from './showSdkTip.js?v=34';
+import { startCameraLog } from './camlog.js?v=34';
+import { CAMERA } from './config.js?v=34';
+import { enforceCameraHeight } from './enforceCameraHeight.js?v=34';
+import { enableWasdMove } from './wasdMove.js?v=34';
+import { enableFirstPersonLook } from './firstPersonControls.js?v=34';
+import { enableBodyCollision } from './bodyCollision.js?v=34';
 
 const canvas = document.getElementById('canvas');
 
@@ -45,8 +45,9 @@ async function main() {
     camera.lookAt(...CAMERA.target);
 
     // 地板下限约束 + WASD 位移（W/S/A/D 移动、R/F 升降）
-    const heightStep = enforceCameraHeight(camera, lccObject, { eye: 1.5 });
-    const wasdUpdate = enableWasdMove(camera, { speed: 3 });
+    const lift = { value: 0 }; // R/F 手动升降量
+        const heightStep = enforceCameraHeight(camera, lccObject, { eye: 1.4, lift });
+    const wasdUpdate = enableWasdMove(camera, { speed: 3, lift });
     const bodyStep = enableBodyCollision(camera, lccObject, { clearance: 0.5 });
 
     // 相机铁律：无位移输入时位置+朝向完全冻结（渲染前最后钉死）；SDK 无权挪镜头
@@ -64,20 +65,22 @@ async function main() {
       last = now;
 
       const keyMove = wasdUpdate.active(); // 只有键盘位移(WASD/R/F)才属于“位置移动”，旋转不算
-      const anyInput = keyMove || look.active(); // 键盘或鼠标拖拽都算“有操作”（用于是否冻结）
+      const anyInput = keyMove || look.active(); // 键盘或鼠标拖拽都算“有操作”（用于是否冻结 x/z 与朝向）
       const pX0 = camera.position.x, pZ0 = camera.position.z; // 帧内位移起始点
-      sdkUpdate();      // SDK 每帧更新（可能挪相机），先跑，随后被约束/冻结压回
+      sdkUpdate();      // SDK 每帧更新（可能挪相机），先跑，随后被约束压回
       wasdUpdate(dt);   // WASD 平面移动 + R/F 升降
-      if (keyMove) heightStep(dt, now); // 仅键盘位移时跟随高度
-      if (keyMove) bodyStep(dt, now, pX0, pZ0); // 仅键盘位移时做穿墙拦截；旋转永不触发位移
-      look();          // 第一人称朝向（俯仰 ±30° + 阻尼）
-
       if (anyInput) {
         syncFrozen(); // 有操作时记录由我们控制的位姿
       } else {
-        camera.position.set(fx, fy, fz);         // 无输入：渲染前钉死位置
-        camera.quaternion.set(fqx, fqy, fqz, fqw); // 与朝向
+        // 无输入：x/z 与朝向钉死；y 由“立足约束”接管（站到真实模型面+1.4，含悬空下落）
+        camera.position.x = fx;
+        camera.position.z = fz;
+        camera.quaternion.set(fqx, fqy, fqz, fqw);
       }
+      if (keyMove) bodyStep(dt, now, pX0, pZ0); // 仅键盘位移时做穿墙拦截；旋转永不触发位移
+      heightStep(dt, now); // 每帧最后：眼高 1.4m 强制（含嵌地恢复），永远收尾
+      look();          // 第一人称朝向（俯仰 ±30° + 阻尼）
+
       renderLoop({ camera, scene, canvas, renderer });
     });
     window.addEventListener('beforeunload', () => { wasdUpdate.stop(); look.stop(); });

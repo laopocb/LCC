@@ -12,6 +12,6 @@ export function createRenderer(canvas) {
   });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setClearColor(0x0b0e14, 1);
+  renderer.setClearColor(0x0b0e14, 0); // alpha=0 透明清屏，露出页面渐变背景
   return renderer;
 }

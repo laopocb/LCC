@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import { loadSdk } from './loadSdk.js?v=10';
-import { DATA_PATH, APP_KEY } from './config.js?v=10';
-import { updateProgress } from './updateProgress.js?v=10';
+import { loadSdk } from './loadSdk.js?v=34';
+import { DATA_PATH, APP_KEY } from './config.js?v=34';
+import { updateProgress } from './updateProgress.js?v=34';
 
 let LCCRenderModule = null;
 
@@ -17,6 +17,31 @@ export async function loadLCC(ctx) {
   updateProgress(0, '初始化 SDK');
   const { LCCRender } = await loadSdk();
   LCCRenderModule = LCCRender;
+  // 画质档位（P0-4）：手机=流畅；3060 以下=标准；3060 及以上=精细
+  const TIERS = {
+    smooth:   { splats: 6000000,  node: 3000000 },
+    standard: { splats: 8000000,  node: 3500000 },
+    fine:   { splats: 12000000, node: 4000000 }
+  };
+  let gpuTier = 'standard';
+  try {
+    const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+      (navigator.maxTouchPoints && navigator.maxTouchPoints > 1 && window.innerWidth < 1024);
+    if (isMobile) {
+      gpuTier = 'smooth';
+    } else {
+      let gpu = '';
+      try {
+        const gl = document.createElement('canvas').getContext('webgl') || document.createElement('canvas').getContext('experimental-webgl');
+        if (gl) { const ext = gl.getExtension('WEBGL_debug_renderer_info'); if (ext) gpu = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) || ''; }
+      } catch (e) {}
+      const mm = gpu.match(/(?:RTX|GTX|RX)?\s*(\d{3,4})/i);
+      const num = mm ? parseInt(mm[1], 10) : 0;
+      gpuTier = num >= 3060 ? 'fine' : 'standard'; // 3060 及以上→精细；以下/未知→标准
+    }
+  } catch (e) {}
+  const TIER = TIERS[gpuTier];
+  console.log('[LCC] 画质档位 = ' + gpuTier + ' | maxSplats ' + TIER.splats);
 
   const lccObject = LCCRender.load(
     {
@@ -38,8 +63,8 @@ export async function loadLCC(ctx) {
       // 性能参数：根据设备能力配置
       try {
         lccObject.setStartLod(0);
-        lccObject.setMaxSplats(6000000);
-        lccObject.setMaxNodeSplats(3000000);
+        lccObject.setMaxSplats(TIER.splats);
+        lccObject.setMaxNodeSplats(TIER.node);
         lccObject.setMaxDistance(300);
         lccObject.setLodAutoLevelUp(true);
       } catch (e) {

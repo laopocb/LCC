@@ -3,7 +3,7 @@
  * 无记录时返回 config 默认 CAMERA，保证首次打开仍有合理视角。
  * 兼容旧格式（保存过 target）：优先用新 yaw/pitch，没有则回退 target 让上层 lookAt。
  */
-import { CAMERA } from './config.js?v=10';
+import { CAMERA } from './config.js?v=34';
 
 const KEY = 'wanlin_camera_pose';
 
